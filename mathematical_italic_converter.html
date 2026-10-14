@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mathematical Italic Converter</title>
+<style>
+body{margin:0;padding:24px;font-family:Arial,sans-serif;background:#111318;color:#f3f4f6}main{max-width:760px;margin:auto}h1{font-size:25px}
+p{color:#b9bdc7;line-height:1.5}label{display:block;margin:20px 0 8px;font-weight:bold}
+textarea{box-sizing:border-box;width:100%;min-height:120px;resize:vertical;border:1px solid #414654;border-radius:12px;padding:14px;font-size:20px;color:#f7f7fb;background:#1b1f27}
+#output{font-size:25px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+button{border:0;border-radius:9px;padding:11px 16px;font-weight:bold;cursor:pointer;background:#e5e7eb;color:#17191f}
+button.secondary{background:#343946;color:#f3f4f6}.note{font-size:13px}#status{min-height:20px;color:#a7f3d0;margin-top:10px}
+</style></head><body><main>
+<h1>Unicode Mathematical Italic Converter</h1>
+<p>Chuyển chữ sang kiểu nghiêng giống <strong>𝐾𝑖𝑚</strong> để copy vào Discord. Dùng offline, không cần cài font.</p>
+<label for="input">Văn bản gốc</label><textarea id="input" placeholder="Nhập chữ ở đây…"></textarea>
+<div class="actions"><button id="convert">Chuyển đổi</button><button class="secondary" id="copy">Copy kết quả</button><button class="secondary" id="clear">Xóa</button></div>
+<label for="output">Kết quả</label><textarea id="output" readonly placeholder="Kết quả sẽ hiện ở đây…"></textarea>
+<div id="status" role="status"></div>
+<p class="note">Dấu tiếng Việt được giữ bằng dấu Unicode kết hợp nên có thể hiển thị hơi khác tùy thiết bị. Chữ số và ký hiệu không có bộ Mathematical Italic tương ứng sẽ giữ nguyên.</p>
+</main><script>
+const upperStart=0x1D434, lowerStart=0x1D44E;
+function stylizeChar(ch){
+ const cp=ch.codePointAt(0);
+ if(cp>=0x41&&cp<=0x5A)return String.fromCodePoint(upperStart+cp-0x41);
+ if(cp>=0x61&&cp<=0x7A)return String.fromCodePoint(lowerStart+cp-0x61);
+ if(ch==='Đ')return 'D\\u0335';
+ if(ch==='đ')return 'd\\u0335';
+ return ch;
+}
+function convert(s){return Array.from(s.normalize('NFD')).map(stylizeChar).join('')}
+const input=document.getElementById('input'), output=document.getElementById('output'), status=document.getElementById('status');
+document.getElementById('convert').onclick=()=>{output.value=convert(input.value);status.textContent='Đã chuyển đổi.'};
+input.addEventListener('input',()=>{output.value=convert(input.value);status.textContent=''});
+document.getElementById('copy').onclick=async()=>{if(!output.value){status.textContent='Nhập chữ trước đã.';return}try{await navigator.clipboard.writeText(output.value);status.textContent='Đã copy kết quả!'}catch(e){output.focus();output.select();status.textContent='Nhấn Ctrl+C để copy kết quả.'}};
+document.getElementById('clear').onclick=()=>{input.value='';output.value='';status.textContent='';input.focus()};
+</script></body></html>
