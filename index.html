@@ -256,47 +256,33 @@
     <div id="toast" class="toast">Đã copy thành công vào bộ nhớ tạm!</div>
 
     <script>
-        // Hàm chuyển đổi ký tự Latin sang Mathematical Italic Unicode
-        function toMathematicalItalic(char) {
-            const code = char.codePointAt(0);
+        // Bảng ánh xạ trực tiếp chuẩn xác cho toàn bộ ký tự Latin a-z và A-Z sang Mathematical Italic
+        const ITALIC_MAP = {
+            'a': '𝑎', 'b': '𝑏', 'c': '𝑐', 'd': '𝑑', 'e': '𝑒', 'f': '𝑓', 'g': '𝑔', 'h': 'ℎ', 'i': '𝑖', 'j': '𝑗', 'k': '𝑘', 'l': '𝑙', 'm': '𝑚',
+            'n': '𝑛', 'o': '𝑜', 'p': '𝑝', 'q': '𝑞', 'r': '𝑟', 's': '𝑠', 't': '𝑡', 'u': '𝑢', 'v': '𝑣', 'w': '𝑤', 'x': '𝑥', 'y': '𝑦', 'z': '𝑧',
+            'A': '𝐴', 'B': '𝐵', 'C': '𝐶', 'D': '𝐷', 'E': '𝐸', 'F': '𝐹', 'G': '𝐺', 'H': '𝐻', 'I': '𝐼', 'J': '𝐽', 'K': '𝐾', 'L': '𝐿', 'M': '𝑀',
+            'N': '𝑁', 'O': '𝑂', 'P': '𝑃', 'Q': '𝑄', 'R': '𝑅', 'S': '𝑆', 'T': '𝑇', 'U': '𝑈', 'V': '𝑉', 'W': '𝑊', 'X': '𝑋', 'Y': '𝑌', 'Z': '𝑍',
+            'Đ': '𝐷̵', 'đ': '𝑑̵'
+        };
 
-            // Xử lý riêng ký tự Đ và đ (không có chuẩn trong khối math italic tiêu chuẩn)
-            if (char === 'Đ') return '𝐷\u0335'; // D italic kết hợp dấu gạch ngang kết hợp
-            if (char === 'đ') return '𝑑\u0335'; // d italic kết hợp dấu gạch ngang kết hợp
-
-            // Chữ cái thường: a-z (Unicode code point từ 97 đến 122)
-            // Khối Mathematical Italic Small a-z bắt đầu từ U+1D44E (119886)
-            if (code >= 97 && code <= 122) {
-                return String.fromCodePoint(119886 + (code - 97));
-            }
-
-            // Chữ cái hoa: A-Z (Unicode code point từ 65 đến 90)
-            // Khối Mathematical Italic Capital A-Z bắt đầu từ U+1D434 (119860)
-            // Ngoại trừ H hoa (U+1D438), I hoa (U+1D439) có điểm mã riêng tùy font, tuy nhiên chuẩn Unicode math italic capital đi tuần tự từ A=119860
-            if (code >= 65 && code <= 90) {
-                // Một số ký tự đặc biệt trong khối math italic uppercase:
-                // A-Z liên tục từ 119860 đến 119885
-                return String.fromCodePoint(119860 + (code - 65));
-            }
-
-            // Giữ nguyên các ký tự khác (chữ số, khoảng trắng, dấu câu, emoji, v.v.)
-            return char;
-        }
-
-        // Hàm xử lý chuỗi toàn diện, hỗ trợ tách dấu tiếng Việt bằng NFD
         function convertText(input) {
             if (!input) return "";
 
-            // Sử dụng NFD (Normalization Form Decomposition) để tách chữ cái cơ sở và các dấu phụ (sắc, huyền, hỏi, ngã, nặng, mũ, râu...)
+            // Tách các dấu tiếng Việt ra khỏi chữ cái cơ sở bằng NFD
             const normalized = input.normalize("NFD");
             let result = "";
 
-            // Duyệt qua từng ký tự (hoặc cụm code point)
             for (const char of normalized) {
-                result += toMathematicalItalic(char);
+                // Nếu ký tự là chữ cái nằm trong bảng ánh xạ, đổi sang italic
+                if (ITALIC_MAP[char]) {
+                    result += ITALIC_MAP[char];
+                } else {
+                    // Giữ nguyên các ký tự khác (dấu kết hợp tiếng Việt, số, khoảng trắng, dấu câu, emoji...)
+                    result += char;
+                }
             }
 
-            // Chuẩn hóa lại bằng NFC để các dấu kết hợp bám chặt vào ký tự cơ sở hiển thị đẹp nhất
+            // Gom lại các dấu kết hợp với chữ cái bằng NFC để hiển thị chuẩn xác nhất
             return result.normalize("NFC");
         }
 
@@ -317,25 +303,20 @@
             }, 3000);
         }
 
-        // Sự kiện chuyển đổi
         function handleConversion() {
             const val = inputTextArea.value;
             outputTextArea.value = convertText(val);
         }
 
         btnConvert.addEventListener('click', handleConversion);
-
-        // Tự động chuyển đổi realtime khi gõ
         inputTextArea.addEventListener('input', handleConversion);
 
-        // Nút Xóa
         btnClear.addEventListener('click', () => {
             inputTextArea.value = '';
             outputTextArea.value = '';
             inputTextArea.focus();
         });
 
-        // Nút Copy
         btnCopy.addEventListener('click', async () => {
             const textToCopy = outputTextArea.value;
             if (!textToCopy.trim()) {
@@ -353,9 +334,8 @@
             }
         });
 
-        // Nút mẫu test nhanh
         btnLoadSample.addEventListener('click', () => {
-            const sample = "Xin chào Việt Nam! Đặng Thị Hồng 0123456789 #general @everyone 🎮✨";
+            const sample = "Hello World! Xin chào Việt Nam! Đặng Thị Hồng 0123456789 #general @everyone 🎮✨";
             inputTextArea.value = sample;
             outputTextArea.value = convertText(sample);
         });
