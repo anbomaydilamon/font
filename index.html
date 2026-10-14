@@ -1,35 +1,364 @@
 <!DOCTYPE html>
-<html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mathematical Italic Converter</title>
-<style>
-body{margin:0;padding:24px;font-family:Arial,sans-serif;background:#111318;color:#f3f4f6}main{max-width:760px;margin:auto}h1{font-size:25px}
-p{color:#b9bdc7;line-height:1.5}label{display:block;margin:20px 0 8px;font-weight:bold}
-textarea{box-sizing:border-box;width:100%;min-height:120px;resize:vertical;border:1px solid #414654;border-radius:12px;padding:14px;font-size:20px;color:#f7f7fb;background:#1b1f27}
-#output{font-size:25px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-button{border:0;border-radius:9px;padding:11px 16px;font-weight:bold;cursor:pointer;background:#e5e7eb;color:#17191f}
-button.secondary{background:#343946;color:#f3f4f6}.note{font-size:13px}#status{min-height:20px;color:#a7f3d0;margin-top:10px}
-</style></head><body><main>
-<h1>Unicode Mathematical Italic Converter</h1>
-<p>Chuyển chữ sang kiểu nghiêng giống <strong>𝐾𝑖𝑚</strong> để copy vào Discord. Dùng offline, không cần cài font.</p>
-<label for="input">Văn bản gốc</label><textarea id="input" placeholder="Nhập chữ ở đây…"></textarea>
-<div class="actions"><button id="convert">Chuyển đổi</button><button class="secondary" id="copy">Copy kết quả</button><button class="secondary" id="clear">Xóa</button></div>
-<label for="output">Kết quả</label><textarea id="output" readonly placeholder="Kết quả sẽ hiện ở đây…"></textarea>
-<div id="status" role="status"></div>
-<p class="note">Dấu tiếng Việt được giữ bằng dấu Unicode kết hợp nên có thể hiển thị hơi khác tùy thiết bị. Chữ số và ký hiệu không có bộ Mathematical Italic tương ứng sẽ giữ nguyên.</p>
-</main><script>
-const upperStart=0x1D434, lowerStart=0x1D44E;
-function stylizeChar(ch){
- const cp=ch.codePointAt(0);
- if(cp>=0x41&&cp<=0x5A)return String.fromCodePoint(upperStart+cp-0x41);
- if(cp>=0x61&&cp<=0x7A)return String.fromCodePoint(lowerStart+cp-0x61);
- if(ch==='Đ')return 'D\\u0335';
- if(ch==='đ')return 'd\\u0335';
- return ch;
-}
-function convert(s){return Array.from(s.normalize('NFD')).map(stylizeChar).join('')}
-const input=document.getElementById('input'), output=document.getElementById('output'), status=document.getElementById('status');
-document.getElementById('convert').onclick=()=>{output.value=convert(input.value);status.textContent='Đã chuyển đổi.'};
-input.addEventListener('input',()=>{output.value=convert(input.value);status.textContent=''});
-document.getElementById('copy').onclick=async()=>{if(!output.value){status.textContent='Nhập chữ trước đã.';return}try{await navigator.clipboard.writeText(output.value);status.textContent='Đã copy kết quả!'}catch(e){output.focus();output.select();status.textContent='Nhấn Ctrl+C để copy kết quả.'}};
-document.getElementById('clear').onclick=()=>{input.value='';output.value='';status.textContent='';input.focus()};
-</script></body></html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unicode Mathematical Italic Converter</title>
+    <style>
+        :root {
+            --bg-color: #313338;
+            --panel-bg: #2b2d31;
+            --textarea-bg: #1e1f22;
+            --text-color: #dbdee1;
+            --text-muted: #949ba4;
+            --accent-color: #5865f2;
+            --accent-hover: #4752c4;
+            --success-color: #248046;
+            --success-hover: #1a6335;
+            --danger-color: #f23f43;
+            --danger-hover: #d83c3e;
+            --border-color: #1f2023;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'GG Sans', 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #f2f3f5;
+            margin-bottom: 6px;
+        }
+
+        header p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 850px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .pane {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .pane-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pane-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f2f3f5;
+        }
+
+        textarea {
+            width: 100%;
+            height: 380px;
+            background-color: var(--textarea-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-color);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-success:hover {
+            background-color: var(--success-hover);
+        }
+
+        .btn-secondary {
+            background-color: #4e5058;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #6d6f78;
+        }
+
+        .btn-danger {
+            background-color: transparent;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #232428;
+            color: #f2f3f5;
+            padding: 12px 20px;
+            border-radius: 6px;
+            border-left: 4px solid var(--success-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.error {
+            border-left-color: var(--danger-color);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Unicode Mathematical Italic Converter</h1>
+            <p>Chuyển đổi văn bản sang kiểu chữ Mathematical Italic cho Discord, chạy hoàn toàn trên trình duyệt.</p>
+        </header>
+
+        <div class="workspace">
+            <!-- Ô nhập liệu -->
+            <div class="pane">
+                <div class="pane-header">
+                    <span class="pane-title">Văn bản gốc (Input)</span>
+                    <button class="btn-secondary" id="btn-load-sample" style="padding: 4px 10px; font-size: 12px;">Dán mẫu test</button>
+                </div>
+                <textarea id="input-text" placeholder="Nhập hoặc dán văn bản của bạn vào đây..."></textarea>
+                <div class="toolbar">
+                    <button class="btn-primary" id="btn-convert">Chuyển Đổi</button>
+                    <button class="btn-danger" id="btn-clear">Xóa Hết</button>
+                </div>
+            </div>
+
+            <!-- Ô kết quả -->
+            <div class="pane">
+                <div class="pane-header">
+                    <span class="pane-title">Kết quả Unicode Italic (Output)</span>
+                </div>
+                <textarea id="output-text" readonly placeholder="Kết quả chuyển đổi sẽ hiển thị ở đây..."></textarea>
+                <div class="toolbar">
+                    <button class="btn-success" id="btn-copy">Copy Kết Quả</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Chạy ngoại tuyến độc lập • Giữ nguyên số, dấu tiếng Việt và emoji • Không gửi dữ liệu ra ngoài
+        </footer>
+    </div>
+
+    <div id="toast" class="toast">Đã copy thành công vào bộ nhớ tạm!</div>
+
+    <script>
+        // Hàm chuyển đổi ký tự Latin sang Mathematical Italic Unicode
+        function toMathematicalItalic(char) {
+            const code = char.codePointAt(0);
+
+            // Xử lý riêng ký tự Đ và đ (không có chuẩn trong khối math italic tiêu chuẩn)
+            if (char === 'Đ') return '𝐷\u0335'; // D italic kết hợp dấu gạch ngang kết hợp
+            if (char === 'đ') return '𝑑\u0335'; // d italic kết hợp dấu gạch ngang kết hợp
+
+            // Chữ cái thường: a-z (Unicode code point từ 97 đến 122)
+            // Khối Mathematical Italic Small a-z bắt đầu từ U+1D44E (119886)
+            if (code >= 97 && code <= 122) {
+                return String.fromCodePoint(119886 + (code - 97));
+            }
+
+            // Chữ cái hoa: A-Z (Unicode code point từ 65 đến 90)
+            // Khối Mathematical Italic Capital A-Z bắt đầu từ U+1D434 (119860)
+            // Ngoại trừ H hoa (U+1D438), I hoa (U+1D439) có điểm mã riêng tùy font, tuy nhiên chuẩn Unicode math italic capital đi tuần tự từ A=119860
+            if (code >= 65 && code <= 90) {
+                // Một số ký tự đặc biệt trong khối math italic uppercase:
+                // A-Z liên tục từ 119860 đến 119885
+                return String.fromCodePoint(119860 + (code - 65));
+            }
+
+            // Giữ nguyên các ký tự khác (chữ số, khoảng trắng, dấu câu, emoji, v.v.)
+            return char;
+        }
+
+        // Hàm xử lý chuỗi toàn diện, hỗ trợ tách dấu tiếng Việt bằng NFD
+        function convertText(input) {
+            if (!input) return "";
+
+            // Sử dụng NFD (Normalization Form Decomposition) để tách chữ cái cơ sở và các dấu phụ (sắc, huyền, hỏi, ngã, nặng, mũ, râu...)
+            const normalized = input.normalize("NFD");
+            let result = "";
+
+            // Duyệt qua từng ký tự (hoặc cụm code point)
+            for (const char of normalized) {
+                result += toMathematicalItalic(char);
+            }
+
+            // Chuẩn hóa lại bằng NFC để các dấu kết hợp bám chặt vào ký tự cơ sở hiển thị đẹp nhất
+            return result.normalize("NFC");
+        }
+
+        // DOM Elements
+        const inputTextArea = document.getElementById('input-text');
+        const outputTextArea = document.getElementById('output-text');
+        const btnConvert = document.getElementById('btn-convert');
+        const btnClear = document.getElementById('btn-clear');
+        const btnCopy = document.getElementById('btn-copy');
+        const btnLoadSample = document.getElementById('btn-load-sample');
+        const toast = document.getElementById('toast');
+
+        function showToast(message, isError = false) {
+            toast.textContent = message;
+            toast.className = 'toast show' + (isError ? ' error' : '');
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        // Sự kiện chuyển đổi
+        function handleConversion() {
+            const val = inputTextArea.value;
+            outputTextArea.value = convertText(val);
+        }
+
+        btnConvert.addEventListener('click', handleConversion);
+
+        // Tự động chuyển đổi realtime khi gõ
+        inputTextArea.addEventListener('input', handleConversion);
+
+        // Nút Xóa
+        btnClear.addEventListener('click', () => {
+            inputTextArea.value = '';
+            outputTextArea.value = '';
+            inputTextArea.focus();
+        });
+
+        // Nút Copy
+        btnCopy.addEventListener('click', async () => {
+            const textToCopy = outputTextArea.value;
+            if (!textToCopy.trim()) {
+                showToast('Không có nội dung để copy!', true);
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                showToast('Đã copy kết quả vào bộ nhớ tạm!');
+            } catch (err) {
+                outputTextArea.select();
+                document.execCommand('copy');
+                showToast('Đã copy kết quả!');
+            }
+        });
+
+        // Nút mẫu test nhanh
+        btnLoadSample.addEventListener('click', () => {
+            const sample = "Xin chào Việt Nam! Đặng Thị Hồng 0123456789 #general @everyone 🎮✨";
+            inputTextArea.value = sample;
+            outputTextArea.value = convertText(sample);
+        });
+    </script>
+</body>
+</html>
