@@ -219,7 +219,7 @@
     <div class="container">
         <header>
             <h1>Unicode Mathematical Italic Converter</h1>
-            <p>Chuyển đổi văn bản sang kiểu chữ Mathematical Italic cho Discord, chạy hoàn toàn trên trình duyệt.</p>
+            <p>Chuyển đổi văn bản và chữ số sang kiểu chữ Mathematical Italic cho Discord, chạy hoàn toàn trên trình duyệt.</p>
         </header>
 
         <div class="workspace">
@@ -249,40 +249,40 @@
         </div>
 
         <footer>
-            Chạy ngoại tuyến độc lập • Giữ nguyên số, dấu tiếng Việt và emoji • Không gửi dữ liệu ra ngoài
+            Chạy ngoại tuyến độc lập • Hỗ trợ đầy đủ chữ cái, số, dấu tiếng Việt và emoji • Không gửi dữ liệu ra ngoài
         </footer>
     </div>
 
     <div id="toast" class="toast">Đã copy thành công vào bộ nhớ tạm!</div>
 
     <script>
-        // Bảng ánh xạ trực tiếp chuẩn xác cho toàn bộ ký tự Latin a-z và A-Z sang Mathematical Italic
-        const ITALIC_MAP = {
+        // Bảng ánh xạ chữ cái (a-z, A-Z) và chữ số (0-9) sang định dạng Mathematical Italic / Bold-Italic đẹp mắt
+        const CHAR_MAP = {
             'a': '𝑎', 'b': '𝑏', 'c': '𝑐', 'd': '𝑑', 'e': '𝑒', 'f': '𝑓', 'g': '𝑔', 'h': 'ℎ', 'i': '𝑖', 'j': '𝑗', 'k': '𝑘', 'l': '𝑙', 'm': '𝑚',
             'n': '𝑛', 'o': '𝑜', 'p': '𝑝', 'q': '𝑞', 'r': '𝑟', 's': '𝑠', 't': '𝑡', 'u': '𝑢', 'v': '𝑣', 'w': '𝑤', 'x': '𝑥', 'y': '𝑦', 'z': '𝑧',
             'A': '𝐴', 'B': '𝐵', 'C': '𝐶', 'D': '𝐷', 'E': '𝐸', 'F': '𝐹', 'G': '𝐺', 'H': '𝐻', 'I': '𝐼', 'J': '𝐽', 'K': '𝐾', 'L': '𝐿', 'M': '𝑀',
             'N': '𝑁', 'O': '𝑂', 'P': '𝑃', 'Q': '𝑄', 'R': '𝑅', 'S': '𝑆', 'T': '𝑇', 'U': '𝑈', 'V': '𝑉', 'W': '𝑊', 'X': '𝑋', 'Y': '𝑌', 'Z': '𝑍',
-            'Đ': '𝐷̵', 'đ': '𝑑̵'
+            'Đ': '𝐷̵', 'đ': '𝑑̵',
+            // Chuyển đổi số sang kiểu Mathematical Sans-Serif / Italic Digits tương ứng hiển thị đẹp trên Discord
+            '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒', '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
         };
 
         function convertText(input) {
             if (!input) return "";
 
-            // Tách các dấu tiếng Việt ra khỏi chữ cái cơ sở bằng NFD
+            // Tách dấu tiếng Việt bằng NFD
             const normalized = input.normalize("NFD");
             let result = "";
 
             for (const char of normalized) {
-                // Nếu ký tự là chữ cái nằm trong bảng ánh xạ, đổi sang italic
-                if (ITALIC_MAP[char]) {
-                    result += ITALIC_MAP[char];
+                if (CHAR_MAP[char]) {
+                    result += CHAR_MAP[char];
                 } else {
-                    // Giữ nguyên các ký tự khác (dấu kết hợp tiếng Việt, số, khoảng trắng, dấu câu, emoji...)
+                    // Giữ nguyên các ký tự khác (dấu kết hợp, khoảng trắng, dấu câu, emoji...)
                     result += char;
                 }
             }
 
-            // Gom lại các dấu kết hợp với chữ cái bằng NFC để hiển thị chuẩn xác nhất
             return result.normalize("NFC");
         }
 
